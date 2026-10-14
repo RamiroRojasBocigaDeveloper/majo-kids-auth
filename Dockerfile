@@ -31,9 +31,12 @@ EXPOSE 10000
 # UseContainerSupport: detecta correctamente los límites de memoria del contenedor
 # MaxRAMPercentage: usa hasta el 75% de la RAM disponible para el heap
 # TieredStopAtLevel=1: reduce el tiempo de compilación JIT en el arranque
+# user.timezone: Render corre en UTC; forzamos hora de Colombia para que
+# @CreationTimestamp y LocalDateTime.now() guarden hora local correcta
 ENTRYPOINT ["java", \
     "-XX:+UseContainerSupport", \
     "-XX:MaxRAMPercentage=75.0", \
     "-XX:TieredStopAtLevel=1", \
+    "-Duser.timezone=America/Bogota", \
     "-Dspring.profiles.active=prod", \
     "-jar", "app.jar"]
