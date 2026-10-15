@@ -20,6 +20,7 @@ public interface VentaMapper {
     @Mapping(source = "entity.metodoPago.nombre", target = "metodoPagoNombre")
     @Mapping(source = "entity.sesion.usuario.nombre", target = "nombreVendedor")
     @Mapping(source = "entity.fechaRegistroManual", target = "fechaRegistroManual")
+    @Mapping(source = "detalles", target = "detalles")
     VentaResponse toResponse(VentaEntity entity, List<VentaResponse.DetalleVentaResponse> detalles);
 
     @Mapping(source = "producto.id", target = "productoId")
