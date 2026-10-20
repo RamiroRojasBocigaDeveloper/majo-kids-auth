@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -60,6 +61,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 responderNoAutorizado(response);
                 return;
             }
+        } catch (DataAccessException e) {
+            responderServicioNoDisponible(response);
+            return;
         } catch (Exception e) {
             responderNoAutorizado(response);
             return;
@@ -71,5 +75,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write("{\"message\":\"Token inválido o expirado\"}");
+    }
+
+    private void responderServicioNoDisponible(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("{\"message\":\"El servicio de base de datos no está disponible. Intenta de nuevo en unos segundos.\"}");
     }
 }

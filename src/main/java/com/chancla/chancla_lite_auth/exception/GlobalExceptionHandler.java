@@ -3,6 +3,7 @@ package com.chancla.chancla_lite_auth.exception;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -64,6 +65,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleDataIntegrity(DataIntegrityViolationException ex) {
         logger.error("Violación de integridad de datos: ", ex);
         return respuesta(HttpStatus.BAD_REQUEST, "La operación viola una regla de integridad de los datos");
+    }
+
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<Map<String, Object>> handleDataAccess(DataAccessException ex) {
+        logger.error("Base de datos no disponible: ", ex);
+        return respuesta(HttpStatus.SERVICE_UNAVAILABLE,
+                "La base de datos no está disponible en este momento. Intenta de nuevo en unos segundos.");
     }
 
     @ExceptionHandler(RuntimeException.class)
