@@ -21,7 +21,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -154,11 +157,41 @@ public class SesionTrabajoServiceImpl implements SesionTrabajoService {
         Double totalGastos = gastos.stream().mapToDouble(GastoEntity::getMonto).sum();
         Double saldoNeto = totalVentas - totalGastos;
 
+        // Desglose por método de pago (ordenado por monto descendente)
+        Map<String, Double> porMetodo = ventas.stream()
+                .collect(Collectors.groupingBy(
+                        v -> v.getMetodoPago() != null ? v.getMetodoPago().getNombre() : "Sin método",
+                        Collectors.summingDouble(VentaEntity::getTotal)));
+
+        Map<String, Double> ventasPorMetodoPago = porMetodo.entrySet().stream()
+                .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (a, b) -> a,
+                        LinkedHashMap::new));
+
+        // Efectivo: mismos criterios que la UI ('efectivo' en el nombre, case-insensitive)
+        double totalEfectivo = ventas.stream()
+                .filter(v -> v.getMetodoPago() != null && esEfectivo(v.getMetodoPago().getNombre()))
+                .mapToDouble(VentaEntity::getTotal)
+                .sum();
+        double totalNoEfectivo = totalVentas - totalEfectivo;
+        double efectivoEsperado = totalEfectivo - totalGastos;
+
         return ResumenSesionResponse.builder()
                 .sesionId(sesionId)
                 .totalVentas(totalVentas)
                 .totalGastos(totalGastos)
                 .saldoNeto(saldoNeto)
+                .ventasPorMetodoPago(ventasPorMetodoPago)
+                .totalEfectivo(totalEfectivo)
+                .totalNoEfectivo(totalNoEfectivo)
+                .efectivoEsperado(efectivoEsperado)
                 .build();
+    }
+
+    private boolean esEfectivo(String nombre) {
+        return nombre != null && nombre.toLowerCase().contains("efectivo");
     }
 }
