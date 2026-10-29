@@ -12,6 +12,7 @@ public interface VentaService {
     VentaResponse obtenerPorNumeroFactura(String numeroFactura);
     List<VentaResponse> obtenerTodas();
     List<VentaResponse> obtenerPorSesion(Long sesionId);
+    List<VentaResponse> obtenerEfectivoPorSesion(Long sesionId);
     List<VentaResponse> obtenerPorUsuario(Long usuarioId);
     List<VentaResponse> obtenerPorRango(java.time.LocalDateTime inicio, java.time.LocalDateTime fin);
 }

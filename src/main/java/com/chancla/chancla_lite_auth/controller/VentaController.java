@@ -73,6 +73,11 @@ public class VentaController {
         return ResponseEntity.ok(ventaService.obtenerPorSesion(sesionId));
     }
 
+    @GetMapping("/sesion/{sesionId}/efectivo")
+    public ResponseEntity<List<VentaResponse>> obtenerEfectivoPorSesion(@PathVariable Long sesionId) {
+        return ResponseEntity.ok(ventaService.obtenerEfectivoPorSesion(sesionId));
+    }
+
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<VentaResponse>> obtenerPorUsuario(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(ventaService.obtenerPorUsuario(usuarioId));

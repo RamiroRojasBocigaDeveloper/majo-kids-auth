@@ -237,6 +237,17 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<VentaResponse> obtenerEfectivoPorSesion(Long sesionId) {
+        return ventaRepository.findBySesionId(sesionId).stream()
+                .filter(v -> v.getMetodoPago() != null
+                        && v.getMetodoPago().getNombre() != null
+                        && v.getMetodoPago().getNombre().toLowerCase().contains("efectivo"))
+                .map(v -> ventaMapper.toResponse(v, ventaMapper.toDetalleResponseList(v.getDetalles())))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<VentaResponse> obtenerPorUsuario(Long usuarioId) {
         return ventaRepository.findBySesionUsuarioId(usuarioId).stream()
                 .map(v -> ventaMapper.toResponse(v, ventaMapper.toDetalleResponseList(v.getDetalles())))
