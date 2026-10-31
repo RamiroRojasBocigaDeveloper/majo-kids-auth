@@ -48,7 +48,7 @@ public class GastoController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> crear(@Valid @RequestBody GastoRequest request) {
         try {
             return ResponseEntity.status(HttpStatus.CREATED).body(gastoService.crear(request));

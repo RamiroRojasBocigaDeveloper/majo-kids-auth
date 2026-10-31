@@ -155,6 +155,15 @@ public class SesionTrabajoServiceImpl implements SesionTrabajoService {
 
         Double totalVentas = ventas.stream().mapToDouble(VentaEntity::getTotal).sum();
         Double totalGastos = gastos.stream().mapToDouble(GastoEntity::getMonto).sum();
+
+        // Separar gastos de caja vs generales
+        Double totalGastosDeCaja = gastos.stream()
+                .filter(GastoEntity::isEsDeCaja)
+                .mapToDouble(GastoEntity::getMonto).sum();
+        Double totalGastosGenerales = gastos.stream()
+                .filter(g -> !g.isEsDeCaja())
+                .mapToDouble(GastoEntity::getMonto).sum();
+
         Double saldoNeto = totalVentas - totalGastos;
 
         // Desglose por método de pago (ordenado por monto descendente)
@@ -177,12 +186,15 @@ public class SesionTrabajoServiceImpl implements SesionTrabajoService {
                 .mapToDouble(VentaEntity::getTotal)
                 .sum();
         double totalNoEfectivo = totalVentas - totalEfectivo;
-        double efectivoEsperado = totalEfectivo - totalGastos;
+        // Solo los gastos de caja reducen el efectivo esperado
+        double efectivoEsperado = totalEfectivo - totalGastosDeCaja;
 
         return ResumenSesionResponse.builder()
                 .sesionId(sesionId)
                 .totalVentas(totalVentas)
                 .totalGastos(totalGastos)
+                .totalGastosDeCaja(totalGastosDeCaja)
+                .totalGastosGenerales(totalGastosGenerales)
                 .saldoNeto(saldoNeto)
                 .ventasPorMetodoPago(ventasPorMetodoPago)
                 .totalEfectivo(totalEfectivo)

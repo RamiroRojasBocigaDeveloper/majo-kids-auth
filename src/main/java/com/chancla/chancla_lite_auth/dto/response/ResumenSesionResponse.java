@@ -15,6 +15,8 @@ public class ResumenSesionResponse {
     private Long sesionId;
     private Double totalVentas;
     private Double totalGastos;
+    private Double totalGastosDeCaja;
+    private Double totalGastosGenerales;
     private Double saldoNeto;
     private Map<String, Double> ventasPorMetodoPago;
     private Double totalEfectivo;

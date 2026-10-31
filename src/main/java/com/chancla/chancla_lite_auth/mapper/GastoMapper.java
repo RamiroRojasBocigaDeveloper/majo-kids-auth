@@ -13,6 +13,7 @@ public interface GastoMapper {
     @Mapping(target = "sesion", ignore = true)
     @Mapping(target = "categoriaGasto", ignore = true)
     @Mapping(target = "subcategoriaGasto", ignore = true)
+    @Mapping(target = "esDeCaja", ignore = true)
     GastoEntity toEntity(GastoRequest request);
 
     @Mapping(source = "sesion.id", target = "sesionId")

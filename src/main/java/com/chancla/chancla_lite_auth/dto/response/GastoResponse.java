@@ -15,6 +15,7 @@ public class GastoResponse {
     private LocalDateTime createdAt;
     private LocalDateTime fechaRegistroManual;
     private String nombreUsuario;
+    private boolean esDeCaja;
 
     public GastoResponse() {
     }
@@ -52,4 +53,7 @@ public class GastoResponse {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public boolean isEsDeCaja() { return esDeCaja; }
+    public void setEsDeCaja(boolean esDeCaja) { this.esDeCaja = esDeCaja; }
 }
