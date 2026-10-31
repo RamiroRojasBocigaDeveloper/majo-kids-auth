@@ -18,8 +18,11 @@ public class GastoEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sesion_id", nullable = false)
+    @JoinColumn(name = "sesion_id", nullable = true)
     private SesionTrabajoEntity sesion;
+
+    @Column(name = "es_de_caja", nullable = false)
+    private boolean esDeCaja = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categoria_gasto_id", nullable = false)

@@ -77,40 +77,50 @@ public class GastoServiceImpl implements GastoService {
 
         SesionTrabajoEntity sesion = null;
 
-        if (isAdmin && request.getUsuarioId() != null) {
-            // Lógica de atribución automática para Administradores
-            sesion = sesionTrabajoRepository.findByUsuarioIdAndEstado(request.getUsuarioId(), com.chancla.chancla_lite_auth.enums.EstadoSesion.ABIERTA)
-                    .orElseGet(() -> {
-                        // Buscar última sesión o crear una nueva
-                        java.util.List<SesionTrabajoEntity> sesiones = sesionTrabajoRepository.findByUsuarioId(request.getUsuarioId());
-                        if (!sesiones.isEmpty()) {
-                            return sesiones.get(sesiones.size() - 1);
-                        }
-                        
-                        com.chancla.chancla_lite_auth.entity.UsuarioEntity usuario = usuarioRepository.findById(request.getUsuarioId())
-                                .orElseThrow(() -> new RuntimeException("Usuario no encontrado ID: " + request.getUsuarioId()));
-                        
-                        SesionTrabajoEntity nuevaSesion = new SesionTrabajoEntity();
-                        nuevaSesion.setUsuario(usuario);
-                        nuevaSesion.setEstado(com.chancla.chancla_lite_auth.enums.EstadoSesion.CERRADA);
-                        nuevaSesion.setRolUsuario(usuario.getRol().getNombre());
-                        
-                        java.time.LocalDateTime fechaRef = (request.getFechaHistorica() != null) 
-                            ? request.getFechaHistorica().atTime(9, 0) 
-                            : java.time.LocalDateTime.now();
-                        
-                        nuevaSesion.setHoraInicio(fechaRef);
-                        nuevaSesion.setHoraFin(fechaRef.plusHours(8));
-                        return sesionTrabajoRepository.save(nuevaSesion);
-                    });
+        if (!request.isEsDeCaja()) {
+            // Gasto general (no sale de caja): la sesión es opcional
+            if (request.getSesionId() != null) {
+                sesion = sesionTrabajoRepository.findById(request.getSesionId()).orElse(null);
+            }
+            // Los gastos generales SOLO los puede crear un administrador
+            if (!isAdmin) {
+                throw new RuntimeException("Solo un administrador puede registrar gastos que no salen de la caja.");
+            }
         } else {
-            sesion = sesionTrabajoRepository.findById(request.getSesionId())
-                    .orElseThrow(() -> new RuntimeException("Sesión no encontrada."));
-        }
+            // Gasto de caja: lógica original
+            if (isAdmin && request.getUsuarioId() != null) {
+                sesion = sesionTrabajoRepository.findByUsuarioIdAndEstado(request.getUsuarioId(), com.chancla.chancla_lite_auth.enums.EstadoSesion.ABIERTA)
+                        .orElseGet(() -> {
+                            java.util.List<SesionTrabajoEntity> sesiones = sesionTrabajoRepository.findByUsuarioId(request.getUsuarioId());
+                            if (!sesiones.isEmpty()) {
+                                return sesiones.get(sesiones.size() - 1);
+                            }
 
-        // Regla: Bloquea cajeros si la sesión no está abierta
-        if (!isAdmin && sesion.getEstado() != EstadoSesion.ABIERTA) {
-            throw new RuntimeException("Solo un administrador puede registrar gastos en una sesión cerrada.");
+                            com.chancla.chancla_lite_auth.entity.UsuarioEntity usuario = usuarioRepository.findById(request.getUsuarioId())
+                                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado ID: " + request.getUsuarioId()));
+
+                            SesionTrabajoEntity nuevaSesion = new SesionTrabajoEntity();
+                            nuevaSesion.setUsuario(usuario);
+                            nuevaSesion.setEstado(com.chancla.chancla_lite_auth.enums.EstadoSesion.CERRADA);
+                            nuevaSesion.setRolUsuario(usuario.getRol().getNombre());
+
+                            java.time.LocalDateTime fechaRef = (request.getFechaHistorica() != null)
+                                    ? request.getFechaHistorica().atTime(9, 0)
+                                    : java.time.LocalDateTime.now();
+
+                            nuevaSesion.setHoraInicio(fechaRef);
+                            nuevaSesion.setHoraFin(fechaRef.plusHours(8));
+                            return sesionTrabajoRepository.save(nuevaSesion);
+                        });
+            } else {
+                sesion = sesionTrabajoRepository.findById(request.getSesionId())
+                        .orElseThrow(() -> new RuntimeException("Sesión no encontrada."));
+            }
+
+            // Regla: Bloquea cajeros si la sesión no está abierta
+            if (!isAdmin && sesion.getEstado() != EstadoSesion.ABIERTA) {
+                throw new RuntimeException("Solo un administrador puede registrar gastos en una sesión cerrada.");
+            }
         }
 
         CategoriaGastoEntity categoria = categoriaGastoRepository.findById(request.getCategoriaGastoId())
@@ -125,6 +135,7 @@ public class GastoServiceImpl implements GastoService {
         GastoEntity nuevoGasto = gastoMapper.toEntity(request);
         nuevoGasto.setSesion(sesion);
         nuevoGasto.setCategoriaGasto(categoria);
+        nuevoGasto.setEsDeCaja(request.isEsDeCaja());
         if (subcategoria != null) {
             nuevoGasto.setSubcategoriaGasto(subcategoria);
         }
