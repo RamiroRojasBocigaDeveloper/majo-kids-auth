@@ -39,6 +39,12 @@ public class MovimientoInventarioServiceImpl implements MovimientoInventarioServ
 
         TipoMovimiento tipo = TipoMovimiento.valueOf(request.getTipo().toUpperCase());
 
+        // Una entrada de inventario representa una compra: el costo unitario es obligatorio
+        // para poder sumarla a la inversión en mercancía.
+        if (tipo == TipoMovimiento.ENTRADA && request.getNuevoPrecioCompra() == null) {
+            throw new RuntimeException("El costo unitario es obligatorio para registrar una entrada de inventario.");
+        }
+
         // Validación previa para asegurar que la acción es posible antes de que el trigger la ejecte
         if (tipo == TipoMovimiento.SALIDA || tipo == TipoMovimiento.AJUSTE) {
         	// Aquí AJUSTE se maneja como correción. Para mantener la misma lógica de antes (salida):
@@ -76,6 +82,14 @@ public class MovimientoInventarioServiceImpl implements MovimientoInventarioServ
         MovimientoInventarioEntity movimento = movimientoInventarioMapper.toEntity(request);
         movimento.setProducto(producto);
         movimento.setTipo(tipo);
+
+        // Solo las entradas reales de compra cuentan para la inversión en mercancía.
+        // Los reversos de edición de venta crean ENTRADA directamente en VentaServiceImpl
+        // y se quedan con esCompra = false.
+        if (tipo == TipoMovimiento.ENTRADA) {
+            movimento.setCostoUnitario(request.getNuevoPrecioCompra());
+            movimento.setEsCompra(Boolean.TRUE);
+        }
 
         MovimientoInventarioEntity guardado = movimientoInventarioRepository.save(movimento);
         return movimientoInventarioMapper.toResponse(guardado);

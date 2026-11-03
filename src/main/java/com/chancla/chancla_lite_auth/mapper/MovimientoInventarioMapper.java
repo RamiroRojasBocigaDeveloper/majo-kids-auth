@@ -13,6 +13,8 @@ public interface MovimientoInventarioMapper {
 
     @Mapping(target = "producto", ignore = true)
     @Mapping(target = "tipo", ignore = true)
+    @Mapping(target = "costoUnitario", ignore = true)
+    @Mapping(target = "esCompra", ignore = true)
     MovimientoInventarioEntity toEntity(MovimientoInventarioRequest request);
 
     @Mapping(source = "producto.id", target = "productoId")
