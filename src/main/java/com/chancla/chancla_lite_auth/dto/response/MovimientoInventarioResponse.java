@@ -9,6 +9,8 @@ public class MovimientoInventarioResponse {
     private String productoNombre;
     private String tipo;
     private Integer cantidad;
+    private Double costoUnitario;
+    private Boolean esCompra;
     private String motivo;
     private Long referenciaId;
     private LocalDateTime createdAt;
@@ -31,6 +33,12 @@ public class MovimientoInventarioResponse {
 
     public Integer getCantidad() { return cantidad; }
     public void setCantidad(Integer cantidad) { this.cantidad = cantidad; }
+
+    public Double getCostoUnitario() { return costoUnitario; }
+    public void setCostoUnitario(Double costoUnitario) { this.costoUnitario = costoUnitario; }
+
+    public Boolean getEsCompra() { return esCompra; }
+    public void setEsCompra(Boolean esCompra) { this.esCompra = esCompra; }
 
     public String getMotivo() { return motivo; }
     public void setMotivo(String motivo) { this.motivo = motivo; }

@@ -1,6 +1,7 @@
 package com.chancla.chancla_lite_auth.controller;
 
 import com.chancla.chancla_lite_auth.dto.response.DashboardResponse;
+import com.chancla.chancla_lite_auth.dto.response.EstadisticasInversionResponse;
 import com.chancla.chancla_lite_auth.service.ReporteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -37,5 +38,17 @@ public class ReporteController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
         return ResponseEntity.ok(reporteService.obtenerResumenPorRangoFechas(inicio, fin));
+    }
+
+    @GetMapping("/inversion/global")
+    public ResponseEntity<EstadisticasInversionResponse> obtenerInversionGlobal() {
+        return ResponseEntity.ok(reporteService.obtenerEstadisticasInversionGlobal());
+    }
+
+    @GetMapping("/inversion/rango")
+    public ResponseEntity<EstadisticasInversionResponse> obtenerInversionPorRango(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
+        return ResponseEntity.ok(reporteService.obtenerEstadisticasInversion(inicio, fin));
     }
 }

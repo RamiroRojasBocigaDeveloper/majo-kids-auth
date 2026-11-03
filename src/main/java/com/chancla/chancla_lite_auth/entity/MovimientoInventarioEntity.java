@@ -30,6 +30,12 @@ public class MovimientoInventarioEntity {
     @Column(nullable = false)
     private Integer cantidad;
 
+    @Column(name = "costo_unitario")
+    private Double costoUnitario;
+
+    @Column(name = "es_compra", nullable = false)
+    private Boolean esCompra = false;
+
     @Column(nullable = false, length = 100)
     private String motivo;
 
