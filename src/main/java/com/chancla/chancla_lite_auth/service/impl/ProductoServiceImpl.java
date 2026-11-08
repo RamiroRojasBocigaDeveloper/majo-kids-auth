@@ -3,7 +3,9 @@ package com.chancla.chancla_lite_auth.service.impl;
 import com.chancla.chancla_lite_auth.dto.request.ProductoRequest;
 import com.chancla.chancla_lite_auth.dto.response.ProductoResponse;
 import com.chancla.chancla_lite_auth.entity.CategoriaEntity;
+import com.chancla.chancla_lite_auth.entity.MovimientoInventarioEntity;
 import com.chancla.chancla_lite_auth.entity.ProductoEntity;
+import com.chancla.chancla_lite_auth.enums.TipoMovimiento;
 import com.chancla.chancla_lite_auth.mapper.ProductoMapper;
 import com.chancla.chancla_lite_auth.repository.CategoriaRepository;
 import com.chancla.chancla_lite_auth.repository.DetalleVentaRepository;
@@ -78,7 +80,20 @@ public class ProductoServiceImpl implements ProductoService {
         nuevoProducto.setCategoria(categoria);
         
         ProductoEntity productoGuardado = productoRepository.save(nuevoProducto);
-        
+
+        // El alta de un producto con stock inicial representa una compra real:
+        // se registra el movimiento de entrada para que cuente en la inversion en mercancia.
+        if (productoGuardado.getStockActual() != null && productoGuardado.getStockActual() > 0) {
+            MovimientoInventarioEntity movimiento = new MovimientoInventarioEntity();
+            movimiento.setProducto(productoGuardado);
+            movimiento.setTipo(TipoMovimiento.ENTRADA);
+            movimiento.setCantidad(productoGuardado.getStockActual());
+            movimiento.setCostoUnitario(productoGuardado.getPrecioCompra());
+            movimiento.setEsCompra(Boolean.TRUE);
+            movimiento.setMotivo("Alta de producto - stock inicial");
+            movimientoInventarioRepository.save(movimiento);
+        }
+
         // Registro de Auditoría
         String usuarioActual = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
         auditoriaService.registrar(usuarioActual, "CREAR", "PRODUCTO", productoGuardado.getId(), 
