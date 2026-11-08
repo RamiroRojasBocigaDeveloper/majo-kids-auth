@@ -78,13 +78,18 @@ public class GastoServiceImpl implements GastoService {
         SesionTrabajoEntity sesion = null;
 
         if (!request.isEsDeCaja()) {
-            // Gasto general (no sale de caja): la sesión es opcional
+            // Gasto general (no sale de caja): la sesion es opcional para administradores
             if (request.getSesionId() != null) {
                 sesion = sesionTrabajoRepository.findById(request.getSesionId()).orElse(null);
             }
-            // Los gastos generales SOLO los puede crear un administrador
+            // No administradores (vendedor/jefe): se exige sesion ABIERTA, igual que un gasto de caja
             if (!isAdmin) {
-                throw new RuntimeException("Solo un administrador puede registrar gastos que no salen de la caja.");
+                if (sesion == null) {
+                    throw new RuntimeException("Se requiere una sesión abierta para registrar un gasto general.");
+                }
+                if (sesion.getEstado() != EstadoSesion.ABIERTA) {
+                    throw new RuntimeException("Solo un administrador puede registrar gastos en una sesión cerrada.");
+                }
             }
         } else {
             // Gasto de caja: lógica original
