@@ -9,6 +9,9 @@ public class DashboardResponse {
     private Double totalGastos;
     private Double totalSueldos;
     private Double gananciaNeta;
+    private Double utilidadNeta;
+    private Double capitalDisponible;
+    private Double comprasMercancia;
     private Long cantidadVentas;
     private Double gananciaProductos;
     private Double costoMercancia;
@@ -36,6 +39,15 @@ public class DashboardResponse {
 
     public Double getGananciaNeta() { return gananciaNeta; }
     public void setGananciaNeta(Double gananciaNeta) { this.gananciaNeta = gananciaNeta; }
+
+    public Double getUtilidadNeta() { return utilidadNeta; }
+    public void setUtilidadNeta(Double utilidadNeta) { this.utilidadNeta = utilidadNeta; }
+
+    public Double getCapitalDisponible() { return capitalDisponible; }
+    public void setCapitalDisponible(Double capitalDisponible) { this.capitalDisponible = capitalDisponible; }
+
+    public Double getComprasMercancia() { return comprasMercancia; }
+    public void setComprasMercancia(Double comprasMercancia) { this.comprasMercancia = comprasMercancia; }
 
     public Long getCantidadVentas() { return cantidadVentas; }
     public void setCantidadVentas(Long cantidadVentas) { this.cantidadVentas = cantidadVentas; }

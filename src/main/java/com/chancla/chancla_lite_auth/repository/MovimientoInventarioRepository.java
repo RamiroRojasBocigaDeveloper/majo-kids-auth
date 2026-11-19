@@ -34,6 +34,26 @@ public interface MovimientoInventarioRepository extends JpaRepository<Movimiento
             "WHERE m.tipo = :tipo AND m.esCompra = true")
     Double sumCompras(@Param("tipo") TipoMovimiento tipo);
 
+    @Query("SELECT COALESCE(SUM(COALESCE(m.costoUnitario, 0.0) * m.cantidad), 0.0) " +
+            "FROM MovimientoInventarioEntity m " +
+            "WHERE m.tipo = :tipo AND m.esCompra = true AND m.referenciaId IS NULL " +
+            "AND m.createdAt BETWEEN :inicio AND :fin")
+    Double sumEntradasSinCompraEntre(@Param("tipo") TipoMovimiento tipo,
+                                     @Param("inicio") LocalDateTime inicio,
+                                     @Param("fin") LocalDateTime fin);
+
+    @Query("SELECT COALESCE(SUM(COALESCE(m.costoUnitario, 0.0) * m.cantidad), 0.0) " +
+            "FROM MovimientoInventarioEntity m " +
+            "WHERE m.tipo = :tipo AND m.esCompra = true AND m.referenciaId IS NULL " +
+            "AND m.createdAt <= :fin")
+    Double sumEntradasSinCompraHasta(@Param("tipo") TipoMovimiento tipo,
+                                     @Param("fin") LocalDateTime fin);
+
+    @Query("SELECT COALESCE(SUM(COALESCE(m.costoUnitario, 0.0) * m.cantidad), 0.0) " +
+            "FROM MovimientoInventarioEntity m " +
+            "WHERE m.tipo = :tipo AND m.esCompra = true AND m.referenciaId IS NULL")
+    Double sumEntradasSinCompra(@Param("tipo") TipoMovimiento tipo);
+
     @Query("SELECT new com.chancla.chancla_lite_auth.dto.response.InversionProductoDTO(" +
             "m.producto.id, m.producto.referencia, m.producto.nombre, " +
             "SUM(m.cantidad), SUM(COALESCE(m.costoUnitario, 0.0) * m.cantidad)) " +
@@ -53,4 +73,25 @@ public interface MovimientoInventarioRepository extends JpaRepository<Movimiento
             "GROUP BY m.producto.id, m.producto.referencia, m.producto.nombre " +
             "ORDER BY SUM(COALESCE(m.costoUnitario, 0.0) * m.cantidad) DESC")
     List<InversionProductoDTO> findComprasPorProducto(@Param("tipo") TipoMovimiento tipo);
+
+    @Query("SELECT new com.chancla.chancla_lite_auth.dto.response.InversionProductoDTO(" +
+            "m.producto.id, m.producto.referencia, m.producto.nombre, " +
+            "SUM(m.cantidad), SUM(COALESCE(m.costoUnitario, 0.0) * m.cantidad)) " +
+            "FROM MovimientoInventarioEntity m " +
+            "WHERE m.tipo = :tipo AND m.esCompra = true AND m.referenciaId IS NULL " +
+            "AND m.createdAt BETWEEN :inicio AND :fin " +
+            "GROUP BY m.producto.id, m.producto.referencia, m.producto.nombre " +
+            "ORDER BY SUM(COALESCE(m.costoUnitario, 0.0) * m.cantidad) DESC")
+    List<InversionProductoDTO> findEntradasSinCompraPorProductoEntre(@Param("tipo") TipoMovimiento tipo,
+                                                                    @Param("inicio") LocalDateTime inicio,
+                                                                    @Param("fin") LocalDateTime fin);
+
+    @Query("SELECT new com.chancla.chancla_lite_auth.dto.response.InversionProductoDTO(" +
+            "m.producto.id, m.producto.referencia, m.producto.nombre, " +
+            "SUM(m.cantidad), SUM(COALESCE(m.costoUnitario, 0.0) * m.cantidad)) " +
+            "FROM MovimientoInventarioEntity m " +
+            "WHERE m.tipo = :tipo AND m.esCompra = true AND m.referenciaId IS NULL " +
+            "GROUP BY m.producto.id, m.producto.referencia, m.producto.nombre " +
+            "ORDER BY SUM(COALESCE(m.costoUnitario, 0.0) * m.cantidad) DESC")
+    List<InversionProductoDTO> findEntradasSinCompraPorProducto(@Param("tipo") TipoMovimiento tipo);
 }

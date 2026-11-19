@@ -8,6 +8,7 @@ import com.chancla.chancla_lite_auth.entity.GastoEntity;
 import com.chancla.chancla_lite_auth.entity.SueldoPagadoEntity;
 import com.chancla.chancla_lite_auth.entity.VentaEntity;
 import com.chancla.chancla_lite_auth.enums.TipoMovimiento;
+import com.chancla.chancla_lite_auth.repository.CompraMercanciaRepository;
 import com.chancla.chancla_lite_auth.repository.DetalleVentaRepository;
 import com.chancla.chancla_lite_auth.repository.GastoRepository;
 import com.chancla.chancla_lite_auth.repository.MovimientoInventarioRepository;
@@ -41,6 +42,7 @@ public class ReporteServiceImpl implements ReporteService {
     private final DetalleVentaRepository detalleVentaRepository;
     private final SaldoInicialMercanciaRepository saldoInicialMercanciaRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
+    private final CompraMercanciaRepository compraMercanciaRepository;
     private final GastoMapper gastoMapper;
     private final VentaMapper ventaMapper;
 
@@ -51,6 +53,7 @@ public class ReporteServiceImpl implements ReporteService {
                               DetalleVentaRepository detalleVentaRepository,
                               SaldoInicialMercanciaRepository saldoInicialMercanciaRepository,
                               MovimientoInventarioRepository movimientoInventarioRepository,
+                              CompraMercanciaRepository compraMercanciaRepository,
                               GastoMapper gastoMapper,
                               VentaMapper ventaMapper) {
         this.ventaRepository = ventaRepository;
@@ -59,6 +62,7 @@ public class ReporteServiceImpl implements ReporteService {
         this.detalleVentaRepository = detalleVentaRepository;
         this.saldoInicialMercanciaRepository = saldoInicialMercanciaRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
+        this.compraMercanciaRepository = compraMercanciaRepository;
         this.gastoMapper = gastoMapper;
         this.ventaMapper = ventaMapper;
     }
@@ -69,7 +73,7 @@ public class ReporteServiceImpl implements ReporteService {
         List<GastoEntity> gastos = gastoRepository.findBySesionId(sesionId);
         List<SueldoPagadoEntity> sueldos = sueldoPagadoRepository.findBySesionId(sesionId);
 
-        return construirDashboard(ventas, gastos, sueldos);
+        return construirDashboard(ventas, gastos, sueldos, 0.0);
     }
 
     @Override
@@ -80,16 +84,18 @@ public class ReporteServiceImpl implements ReporteService {
         List<VentaEntity> ventas = ventaRepository.findByRangoFechas(inicioDateTime, finDateTime);
         List<GastoEntity> gastos = gastoRepository.findByRangoFechas(inicioDateTime, finDateTime);
         List<SueldoPagadoEntity> sueldos = sueldoPagadoRepository.findByFechaPagoBetween(inicio, fin);
+        double comprasMercancia = valor(compraMercanciaRepository.sumComprasEntre(inicio, fin));
 
-        return construirDashboard(ventas, gastos, sueldos);
+        return construirDashboard(ventas, gastos, sueldos, comprasMercancia);
     }
 
     @Override
     public DashboardResponse obtenerResumenGlobal() {
-        return construirDashboard(ventaRepository.findAll(), gastoRepository.findAll(), sueldoPagadoRepository.findAll());
+        double comprasMercancia = valor(compraMercanciaRepository.sumCompras());
+        return construirDashboard(ventaRepository.findAll(), gastoRepository.findAll(), sueldoPagadoRepository.findAll(), comprasMercancia);
     }
 
-    private DashboardResponse construirDashboard(List<VentaEntity> ventas, List<GastoEntity> gastos, List<SueldoPagadoEntity> sueldos) {
+    private DashboardResponse construirDashboard(List<VentaEntity> ventas, List<GastoEntity> gastos, List<SueldoPagadoEntity> sueldos, double comprasMercancia) {
         DashboardResponse dashboard = new DashboardResponse();
         
         double totalVentas = ventas.stream().mapToDouble(VentaEntity::getTotal).sum();
@@ -110,9 +116,17 @@ public class ReporteServiceImpl implements ReporteService {
         dashboard.setTotalSueldos(totalSueldos);
         dashboard.setGananciaProductos(gananciaProductos);
         dashboard.setCostoMercancia(costoMercancia);
-        
-        // Flujo de Caja (Efectivo en Caja) = Ventas Totales - (Gastos Operativos + Sueldos)
-        dashboard.setGananciaNeta(totalVentas - (totalGastos + totalSueldos));
+        dashboard.setComprasMercancia(comprasMercancia);
+
+        // Utilidad neta = margen de productos - gastos operativos - nomina.
+        // Las compras de mercancia NO restan utilidad: se convierten en costo cuando se venden.
+        dashboard.setUtilidadNeta(gananciaProductos - (totalGastos + totalSueldos));
+
+        // Capital disponible = dinero producido por el almacen menos gastos, nomina y compras de surtido.
+        // La inversion inicial (saldo de apertura) NO entra aqui.
+        double capitalDisponible = totalVentas - (totalGastos + totalSueldos) - comprasMercancia;
+        dashboard.setCapitalDisponible(capitalDisponible);
+        dashboard.setGananciaNeta(capitalDisponible);
         dashboard.setCantidadVentas((long) ventas.size());
 
         // Agrupación por método de pago
@@ -230,23 +244,33 @@ public class ReporteServiceImpl implements ReporteService {
                 gastoRepository.findByRangoFechas(inicioDateTime, finDateTime));
 
         double gastosOperativos = sumarGastos(gastosPeriodo);
-        double inversionPeriodo = valor(movimientoInventarioRepository
-                .sumComprasEntre(TipoMovimiento.ENTRADA, inicioDateTime, finDateTime));
+
+        // Compras registradas: fuente unica el modulo Compras (incluye migradas sin detalle).
+        // Entradas iniciales: altas de producto con stock que no vienen de una compra.
+        double comprasRegistradasPeriodo = valor(compraMercanciaRepository.sumComprasEntre(inicio, fin));
+        double entradasInicialesPeriodo = valor(movimientoInventarioRepository
+                .sumEntradasSinCompraEntre(TipoMovimiento.ENTRADA, inicioDateTime, finDateTime));
+        double inversionPeriodo = comprasRegistradasPeriodo + entradasInicialesPeriodo;
 
         LocalDate corte = saldoInicialMercanciaRepository.findFechaCorte();
         double saldoInicial = (corte == null || fin.isBefore(corte))
                 ? 0.0
                 : valor(saldoInicialMercanciaRepository.sumMontoBase());
 
-        double inversionHastaFin = saldoInicial + valor(movimientoInventarioRepository
-                .sumComprasHasta(TipoMovimiento.ENTRADA, finDateTime));
+        double comprasRegistradasHasta = valor(compraMercanciaRepository.sumComprasHasta(fin));
+        double entradasInicialesHasta = valor(movimientoInventarioRepository
+                .sumEntradasSinCompraHasta(TipoMovimiento.ENTRADA, finDateTime));
+        double inversionHastaFin = saldoInicial + comprasRegistradasHasta + entradasInicialesHasta;
 
         double gastosAcumulados = sumarGastos(filtrarGastosOperativos(gastoRepository.findAll()));
         double inversionAcumulada = valor(saldoInicialMercanciaRepository.sumMontoBase())
-                + valor(movimientoInventarioRepository.sumCompras(TipoMovimiento.ENTRADA));
+                + valor(compraMercanciaRepository.sumCompras())
+                + valor(movimientoInventarioRepository.sumEntradasSinCompra(TipoMovimiento.ENTRADA));
 
         EstadisticasInversionResponse response = new EstadisticasInversionResponse();
         response.setGastosOperativos(redondear(gastosOperativos));
+        response.setComprasRegistradas(redondear(comprasRegistradasPeriodo));
+        response.setEntradasIniciales(redondear(entradasInicialesPeriodo));
         response.setInversionMercanciaPeriodo(redondear(inversionPeriodo));
         response.setSaldoInicialMercancia(redondear(saldoInicial));
         response.setInversionMercanciaTotal(redondear(inversionHastaFin));
@@ -255,6 +279,8 @@ public class ReporteServiceImpl implements ReporteService {
         response.setGastosOperativosPorSubcategoria(agruparGastosPorSubcategoria(gastosPeriodo));
         response.setComprasPorProducto(movimientoInventarioRepository
                 .findComprasPorProductoEntre(TipoMovimiento.ENTRADA, inicioDateTime, finDateTime));
+        response.setEntradasInicialesPorProducto(movimientoInventarioRepository
+                .findEntradasSinCompraPorProductoEntre(TipoMovimiento.ENTRADA, inicioDateTime, finDateTime));
         response.setProductosConSaldoInicial((int) saldoInicialMercanciaRepository.count());
         return response;
     }
@@ -265,10 +291,15 @@ public class ReporteServiceImpl implements ReporteService {
 
         double gastosOperativos = sumarGastos(gastos);
         double saldoInicial = valor(saldoInicialMercanciaRepository.sumMontoBase());
-        double compras = valor(movimientoInventarioRepository.sumCompras(TipoMovimiento.ENTRADA));
+        double comprasRegistradas = valor(compraMercanciaRepository.sumCompras());
+        double entradasIniciales = valor(movimientoInventarioRepository
+                .sumEntradasSinCompra(TipoMovimiento.ENTRADA));
+        double compras = comprasRegistradas + entradasIniciales;
 
         EstadisticasInversionResponse response = new EstadisticasInversionResponse();
         response.setGastosOperativos(redondear(gastosOperativos));
+        response.setComprasRegistradas(redondear(comprasRegistradas));
+        response.setEntradasIniciales(redondear(entradasIniciales));
         response.setInversionMercanciaPeriodo(redondear(compras));
         response.setSaldoInicialMercancia(redondear(saldoInicial));
         response.setInversionMercanciaTotal(redondear(saldoInicial + compras));
@@ -276,6 +307,8 @@ public class ReporteServiceImpl implements ReporteService {
         response.setTotalInvertidoAcumulado(redondear(saldoInicial + gastosOperativos + compras));
         response.setGastosOperativosPorSubcategoria(agruparGastosPorSubcategoria(gastos));
         response.setComprasPorProducto(movimientoInventarioRepository.findComprasPorProducto(TipoMovimiento.ENTRADA));
+        response.setEntradasInicialesPorProducto(movimientoInventarioRepository
+                .findEntradasSinCompraPorProducto(TipoMovimiento.ENTRADA));
         response.setProductosConSaldoInicial((int) saldoInicialMercanciaRepository.count());
         return response;
     }

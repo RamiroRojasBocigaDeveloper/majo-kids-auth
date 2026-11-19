@@ -35,9 +35,14 @@ class EstadisticasInversionServiceTest {
 
         assertNotNull(response);
         assertNotNull(response.getSaldoInicialMercancia());
+        assertNotNull(response.getComprasRegistradas());
+        assertNotNull(response.getEntradasIniciales());
         assertNotNull(response.getComprasPorProducto());
+        assertNotNull(response.getEntradasInicialesPorProducto());
         assertNotNull(response.getGastosOperativosPorSubcategoria());
         assertNotNull(response.getTotalInvertidoAcumulado());
+        assertEquals(response.getComprasRegistradas() + response.getEntradasIniciales(),
+                response.getInversionMercanciaPeriodo(), 0.01);
         assertTrue(movimientoInventarioRepository.sumCompras(TipoMovimiento.ENTRADA) >= 0);
     }
 
@@ -72,7 +77,12 @@ class EstadisticasInversionServiceTest {
         assertNotNull(response);
         assertNotNull(response.getSaldoInicialMercancia());
         assertNotNull(response.getInversionMercanciaPeriodo());
+        assertNotNull(response.getComprasRegistradas());
+        assertNotNull(response.getEntradasIniciales());
         assertNotNull(response.getComprasPorProducto());
+        assertNotNull(response.getEntradasInicialesPorProducto());
         assertNotNull(response.getGastosOperativosPorSubcategoria());
+        assertEquals(response.getComprasRegistradas() + response.getEntradasIniciales(),
+                response.getInversionMercanciaPeriodo(), 0.01);
     }
 }

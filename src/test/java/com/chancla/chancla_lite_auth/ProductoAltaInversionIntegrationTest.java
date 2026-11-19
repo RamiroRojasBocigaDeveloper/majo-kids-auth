@@ -118,5 +118,13 @@ class ProductoAltaInversionIntegrationTest {
                         "El producto nuevo debe aparecer en compras por producto"));
         assertEquals((long) STOCK_INICIAL, enReporte.getCantidad());
         assertEquals(MONTO_ESPERADO, enReporte.getMonto(), 0.01);
+
+        InversionProductoDTO enEntradasIniciales = reporte.getEntradasInicialesPorProducto().stream()
+                .filter(p -> referencia.equals(p.getReferencia()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "El producto nuevo debe aparecer en entradas iniciales"));
+        assertEquals((long) STOCK_INICIAL, enEntradasIniciales.getCantidad());
+        assertEquals(MONTO_ESPERADO, enEntradasIniciales.getMonto(), 0.01);
     }
 }

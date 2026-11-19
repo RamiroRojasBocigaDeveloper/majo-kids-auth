@@ -7,12 +7,15 @@ public class EstadisticasInversionResponse {
 
     private Double gastosOperativos;
     private Double inversionMercanciaPeriodo;
+    private Double comprasRegistradas;
+    private Double entradasIniciales;
     private Double saldoInicialMercancia;
     private Double inversionMercanciaTotal;
     private Double totalInvertidoPeriodo;
     private Double totalInvertidoAcumulado;
     private Map<String, Double> gastosOperativosPorSubcategoria;
     private List<InversionProductoDTO> comprasPorProducto;
+    private List<InversionProductoDTO> entradasInicialesPorProducto;
     private Integer productosConSaldoInicial;
 
     public EstadisticasInversionResponse() {
@@ -23,6 +26,12 @@ public class EstadisticasInversionResponse {
 
     public Double getInversionMercanciaPeriodo() { return inversionMercanciaPeriodo; }
     public void setInversionMercanciaPeriodo(Double inversionMercanciaPeriodo) { this.inversionMercanciaPeriodo = inversionMercanciaPeriodo; }
+
+    public Double getComprasRegistradas() { return comprasRegistradas; }
+    public void setComprasRegistradas(Double comprasRegistradas) { this.comprasRegistradas = comprasRegistradas; }
+
+    public Double getEntradasIniciales() { return entradasIniciales; }
+    public void setEntradasIniciales(Double entradasIniciales) { this.entradasIniciales = entradasIniciales; }
 
     public Double getSaldoInicialMercancia() { return saldoInicialMercancia; }
     public void setSaldoInicialMercancia(Double saldoInicialMercancia) { this.saldoInicialMercancia = saldoInicialMercancia; }
@@ -41,6 +50,9 @@ public class EstadisticasInversionResponse {
 
     public List<InversionProductoDTO> getComprasPorProducto() { return comprasPorProducto; }
     public void setComprasPorProducto(List<InversionProductoDTO> comprasPorProducto) { this.comprasPorProducto = comprasPorProducto; }
+
+    public List<InversionProductoDTO> getEntradasInicialesPorProducto() { return entradasInicialesPorProducto; }
+    public void setEntradasInicialesPorProducto(List<InversionProductoDTO> entradasInicialesPorProducto) { this.entradasInicialesPorProducto = entradasInicialesPorProducto; }
 
     public Integer getProductosConSaldoInicial() { return productosConSaldoInicial; }
     public void setProductosConSaldoInicial(Integer productosConSaldoInicial) { this.productosConSaldoInicial = productosConSaldoInicial; }
