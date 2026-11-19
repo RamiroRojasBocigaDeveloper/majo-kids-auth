@@ -29,4 +29,13 @@ public interface ProductoRepository extends JpaRepository<ProductoEntity, Long> 
     
     // Buscar productos con stock igual o inferior al mínimo
     List<ProductoEntity> findByStockActualLessThanEqualAndActivoTrue(Integer stockMinimo);
+
+    @Query("SELECT SUM(p.stockActual * p.precioCompra) FROM ProductoEntity p WHERE p.stockActual > 0")
+    Double sumValorInventarioActual();
+
+    @Query("SELECT SUM(p.stockActual) FROM ProductoEntity p WHERE p.stockActual > 0")
+    Long sumUnidadesInventarioActual();
+
+    @Query("SELECT COUNT(p) FROM ProductoEntity p WHERE p.stockActual > 0")
+    Long countProductosConStock();
 }

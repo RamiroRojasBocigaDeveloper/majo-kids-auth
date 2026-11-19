@@ -1,9 +1,11 @@
 package com.chancla.chancla_lite_auth;
 
 import com.chancla.chancla_lite_auth.dto.response.EstadisticasInversionResponse;
+import com.chancla.chancla_lite_auth.entity.ProductoEntity;
 import com.chancla.chancla_lite_auth.enums.TipoMovimiento;
 import com.chancla.chancla_lite_auth.repository.GastoRepository;
 import com.chancla.chancla_lite_auth.repository.MovimientoInventarioRepository;
+import com.chancla.chancla_lite_auth.repository.ProductoRepository;
 import com.chancla.chancla_lite_auth.service.ReporteService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,9 @@ class EstadisticasInversionServiceTest {
     @Autowired
     private GastoRepository gastoRepository;
 
+    @Autowired
+    private ProductoRepository productoRepository;
+
     @Test
     void consultaGlobalEjecutaLasConsultasDeInversion() {
         EstadisticasInversionResponse response = reporteService.obtenerEstadisticasInversionGlobal();
@@ -41,9 +46,26 @@ class EstadisticasInversionServiceTest {
         assertNotNull(response.getEntradasInicialesPorProducto());
         assertNotNull(response.getGastosOperativosPorSubcategoria());
         assertNotNull(response.getTotalInvertidoAcumulado());
+        assertNotNull(response.getValorInventarioActual());
+        assertNotNull(response.getUnidadesInventarioActual());
+        assertNotNull(response.getProductosConStock());
         assertEquals(response.getComprasRegistradas() + response.getEntradasIniciales(),
                 response.getInversionMercanciaPeriodo(), 0.01);
         assertTrue(movimientoInventarioRepository.sumCompras(TipoMovimiento.ENTRADA) >= 0);
+
+        var productosConStock = productoRepository.findAll().stream()
+                .filter(p -> p.getStockActual() != null && p.getStockActual() > 0)
+                .toList();
+        double inventarioEsperado = productosConStock.stream()
+                .mapToDouble(p -> p.getStockActual() * p.getPrecioCompra())
+                .sum();
+        long unidadesEsperadas = productosConStock.stream()
+                .mapToLong(ProductoEntity::getStockActual)
+                .sum();
+
+        assertEquals(inventarioEsperado, response.getValorInventarioActual(), 0.01);
+        assertEquals(unidadesEsperadas, response.getUnidadesInventarioActual().longValue());
+        assertEquals(productosConStock.size(), response.getProductosConStock().intValue());
     }
 
     @Test
@@ -82,6 +104,9 @@ class EstadisticasInversionServiceTest {
         assertNotNull(response.getComprasPorProducto());
         assertNotNull(response.getEntradasInicialesPorProducto());
         assertNotNull(response.getGastosOperativosPorSubcategoria());
+        assertNotNull(response.getValorInventarioActual());
+        assertNotNull(response.getUnidadesInventarioActual());
+        assertNotNull(response.getProductosConStock());
         assertEquals(response.getComprasRegistradas() + response.getEntradasIniciales(),
                 response.getInversionMercanciaPeriodo(), 0.01);
     }
