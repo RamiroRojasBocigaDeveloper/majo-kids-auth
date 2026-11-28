@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -313,9 +314,11 @@ public class ReporteServiceImpl implements ReporteService {
         response.setTotalInvertidoPeriodo(redondear(gastosOperativos + inversionPeriodo));
         response.setTotalInvertidoAcumulado(redondear(gastosAcumulados + inversionAcumulada));
         response.setValorInventarioActual(redondear(valor(productoRepository.sumValorInventarioActual())));
+        response.setValorInventarioVenta(redondear(valor(productoRepository.sumValorInventarioVenta())));
         response.setUnidadesInventarioActual(valorLong(productoRepository.sumUnidadesInventarioActual()));
         response.setProductosConStock(valorLong(productoRepository.countProductosConStock()).intValue());
         response.setGastosOperativosPorSubcategoria(agruparGastosPorSubcategoria(gastosPeriodo));
+        response.setGastosOperativosDetalle(gastoMapper.toResponseList(ordenarGastosPorFechaDesc(gastosPeriodo)));
         response.setComprasPorProducto(movimientoInventarioRepository
                 .findComprasPorProductoEntre(TipoMovimiento.ENTRADA, inicioDateTime, finDateTime));
         response.setEntradasInicialesPorProducto(movimientoInventarioRepository
@@ -345,9 +348,11 @@ public class ReporteServiceImpl implements ReporteService {
         response.setTotalInvertidoPeriodo(redondear(gastosOperativos + compras));
         response.setTotalInvertidoAcumulado(redondear(saldoInicial + gastosOperativos + compras));
         response.setValorInventarioActual(redondear(valor(productoRepository.sumValorInventarioActual())));
+        response.setValorInventarioVenta(redondear(valor(productoRepository.sumValorInventarioVenta())));
         response.setUnidadesInventarioActual(valorLong(productoRepository.sumUnidadesInventarioActual()));
         response.setProductosConStock(valorLong(productoRepository.countProductosConStock()).intValue());
         response.setGastosOperativosPorSubcategoria(agruparGastosPorSubcategoria(gastos));
+        response.setGastosOperativosDetalle(gastoMapper.toResponseList(ordenarGastosPorFechaDesc(gastos)));
         response.setComprasPorProducto(movimientoInventarioRepository.findComprasPorProducto(TipoMovimiento.ENTRADA));
         response.setEntradasInicialesPorProducto(movimientoInventarioRepository
                 .findEntradasSinCompraPorProducto(TipoMovimiento.ENTRADA));
@@ -357,8 +362,40 @@ public class ReporteServiceImpl implements ReporteService {
 
     private List<GastoEntity> filtrarGastosOperativos(List<GastoEntity> gastos) {
         return gastos.stream()
-                .filter(g -> g.getCategoriaGasto() != null
-                        && CATEGORIA_GASTOS_OPERATIVOS.equalsIgnoreCase(g.getCategoriaGasto().getNombre()))
+                .filter(this::esGastoOperativo)
+                .toList();
+    }
+
+    private boolean esGastoOperativo(GastoEntity gasto) {
+        return gasto.getCategoriaGasto() != null
+                && CATEGORIA_GASTOS_OPERATIVOS.equalsIgnoreCase(normalizar(gasto.getCategoriaGasto().getNombre()));
+    }
+
+    private String normalizar(String texto) {
+        if (texto == null) {
+            return "";
+        }
+        return Normalizer.normalize(texto, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .trim();
+    }
+
+    private List<GastoEntity> ordenarGastosPorFechaDesc(List<GastoEntity> gastos) {
+        return gastos.stream()
+                .sorted((a, b) -> {
+                    LocalDateTime fa = a.getFechaRegistroManual() != null ? a.getFechaRegistroManual() : a.getCreatedAt();
+                    LocalDateTime fb = b.getFechaRegistroManual() != null ? b.getFechaRegistroManual() : b.getCreatedAt();
+                    if (fa == null && fb == null) {
+                        return 0;
+                    }
+                    if (fa == null) {
+                        return 1;
+                    }
+                    if (fb == null) {
+                        return -1;
+                    }
+                    return fb.compareTo(fa);
+                })
                 .toList();
     }
 

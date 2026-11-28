@@ -33,6 +33,9 @@ public interface ProductoRepository extends JpaRepository<ProductoEntity, Long> 
     @Query("SELECT SUM(p.stockActual * p.precioCompra) FROM ProductoEntity p WHERE p.stockActual > 0")
     Double sumValorInventarioActual();
 
+    @Query("SELECT SUM(p.stockActual * p.precioVenta) FROM ProductoEntity p WHERE p.stockActual > 0")
+    Double sumValorInventarioVenta();
+
     @Query("SELECT SUM(p.stockActual) FROM ProductoEntity p WHERE p.stockActual > 0")
     Long sumUnidadesInventarioActual();
 

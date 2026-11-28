@@ -47,6 +47,8 @@ class EstadisticasInversionServiceTest {
         assertNotNull(response.getGastosOperativosPorSubcategoria());
         assertNotNull(response.getTotalInvertidoAcumulado());
         assertNotNull(response.getValorInventarioActual());
+        assertNotNull(response.getValorInventarioVenta());
+        assertNotNull(response.getGastosOperativosDetalle());
         assertNotNull(response.getUnidadesInventarioActual());
         assertNotNull(response.getProductosConStock());
         assertEquals(response.getComprasRegistradas() + response.getEntradasIniciales(),
@@ -63,7 +65,12 @@ class EstadisticasInversionServiceTest {
                 .mapToLong(ProductoEntity::getStockActual)
                 .sum();
 
+        double inventarioVentaEsperado = productosConStock.stream()
+                .mapToDouble(p -> p.getStockActual() * p.getPrecioVenta())
+                .sum();
+
         assertEquals(inventarioEsperado, response.getValorInventarioActual(), 0.01);
+        assertEquals(inventarioVentaEsperado, response.getValorInventarioVenta(), 0.01);
         assertEquals(unidadesEsperadas, response.getUnidadesInventarioActual().longValue());
         assertEquals(productosConStock.size(), response.getProductosConStock().intValue());
     }
@@ -74,7 +81,7 @@ class EstadisticasInversionServiceTest {
 
         double esperado = gastoRepository.findAll().stream()
                 .filter(g -> g.getCategoriaGasto() != null
-                        && CATEGORIA_OPERATIVA.equalsIgnoreCase(g.getCategoriaGasto().getNombre()))
+                        && CATEGORIA_OPERATIVA.equalsIgnoreCase(normalizar(g.getCategoriaGasto().getNombre())))
                 .mapToDouble(g -> g.getMonto() != null ? g.getMonto() : 0.0)
                 .sum();
 
@@ -109,5 +116,14 @@ class EstadisticasInversionServiceTest {
         assertNotNull(response.getProductosConStock());
         assertEquals(response.getComprasRegistradas() + response.getEntradasIniciales(),
                 response.getInversionMercanciaPeriodo(), 0.01);
+    }
+
+    private static String normalizar(String texto) {
+        if (texto == null) {
+            return "";
+        }
+        return java.text.Normalizer.normalize(texto, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .trim();
     }
 }
